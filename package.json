@@ -9,7 +9,7 @@
     "prepare": "husky install"
   },
   "bin": {
-    "gendiff": "bin/page-loader.js"
+    "page-loader": "bin/page-loader.js"
   },
   "repository": {
     "type": "git",
@@ -33,5 +33,8 @@
   "lint-staged": {
     "*.js": "eslint --cache --fix",
     "*.{js, json}": "prettier --cache --write"
+  },
+  "dependencies": {
+    "commander": "^9.4.1"
   }
 }
