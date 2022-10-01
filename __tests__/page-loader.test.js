@@ -1,10 +1,12 @@
 import * as fs from 'node:fs/promises';
 import os from 'os';
 import path from 'path';
+import nock from 'nock';
 import pageLoader from '../src/index';
 
 const url = 'https://ru.hexlet.io/courses';
-const expected = 'ru-hexlet-io-courses.html';
+const expectedData = '<!DOCTYPE html><html><head></head><body></body></html>';
+const filename = 'ru-hexlet-io-courses.html';
 let tempDir;
 
 // beforeAll();
@@ -13,10 +15,11 @@ beforeEach(async () => {
 });
 
 test('page download', async () => {
-  const result = await pageLoader(url, tempDir);
-  const ls = await fs.readdir(tempDir);
+  nock('https://ru.hexlet.io').get('/courses').reply(200, expectedData);
 
-  expect(result).toBe(path.join(tempDir, expected));
-  expect(ls).toHaveLength(1);
-  expect(ls[0]).toEqual(expected);
+  const result = await pageLoader(url, tempDir);
+  const fileData = await fs.readFile(path.join(tempDir, filename), { encoding: 'utf8' });
+
+  expect(result).toBe(path.join(tempDir, filename));
+  expect(fileData).toEqual(expectedData);
 });

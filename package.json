@@ -29,6 +29,7 @@
     "husky": "^8.0.1",
     "jest": "^29.1.2",
     "lint-staged": "^13.0.3",
+    "nock": "^13.2.9",
     "prettier": "^2.7.1"
   },
   "lint-staged": {
@@ -36,6 +37,7 @@
     "*.{js, json}": "prettier --cache --write"
   },
   "dependencies": {
+    "axios": "^0.27.2",
     "commander": "^9.4.1"
   }
 }
