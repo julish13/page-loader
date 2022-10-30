@@ -12,23 +12,24 @@ const getFixturePath = (filename) => path.resolve(__dirname, '..', '__fixtures__
 
 const url = 'https://ru.hexlet.io/courses';
 const filename = 'ru-hexlet-io-courses.html';
-const directoryName = 'ru-hexlet-io-courses_files';
-const imageNames = [
-  'ru-hexlet-io-assets-professions-nodejs.png',
-  'ru-hexlet-io-assets-professions-nodejs2.png',
+const assetsDirectoryName = 'ru-hexlet-io-courses_files';
+const resourcesData = [
+  { name: 'ru-hexlet-io-assets-professions-nodejs1.png', link: '/assets/professions/nodejs1.png' },
+  { name: 'ru-hexlet-io-assets-professions-nodejs2.png', link: '/assets/professions/nodejs2.png' },
 ];
 let tempDir;
-let images = [];
+let resources = [];
 
-// beforeAll();
 beforeEach(async () => {
   tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
-  const image1 = await fsp.readFile(getFixturePath('image1.png'), null);
-  const image2 = await fsp.readFile(getFixturePath('image2.png'), null);
-  images = [image1, image2];
+  resources = await Promise.all(
+    resourcesData.map(async ({ name, link }) => {
+      const content = await fsp.readFile(getFixturePath(name), null);
+      nock('https://ru.hexlet.io').get(link).reply(200, content);
+      return { name, content };
+    }),
+  );
   nock('https://ru.hexlet.io').get('/courses').reply(200, response);
-  nock('https://ru.hexlet.io').get('/assets/professions/nodejs.png').reply(200, image1);
-  nock('https://ru.hexlet.io').get('/assets/professions/nodejs2.png').reply(200, image2);
 });
 
 test('page download', async () => {
@@ -45,14 +46,14 @@ test('html is correct', async () => {
   expect(fileData).toEqual(expected);
 });
 
-test('images downloaded', async () => {
+test('resources downloaded', async () => {
   await pageLoader(url, tempDir);
-  const directory = path.join(tempDir, directoryName);
+  const directory = path.join(tempDir, assetsDirectoryName);
   const files = await fsp.readdir(directory);
 
-  imageNames.forEach(async (name, i) => {
+  resources.forEach(async ({ name, content }) => {
     expect(files).toContain(name);
     const tempFile = await fsp.readFile(path.join(directory, name), null);
-    expect(tempFile).toEqual(images[i]);
+    expect(tempFile).toEqual(content);
   });
 });
