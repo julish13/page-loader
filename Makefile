@@ -4,6 +4,9 @@ install:
 publish:
 	npm publish --dry-run
 
+link:
+	npm link
+
 prettier:
 	npx prettier --write ./src/ ./__tests__/ ./bin/
 
