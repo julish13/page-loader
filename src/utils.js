@@ -35,39 +35,58 @@ const formatLink = (link, url) => {
   return result;
 };
 
-export const getLinks = ($, pageUrl) => {
-  const result = tagToSourceAttributeMapping.flatMap((item) => {
-    const { tag, attribute } = item;
-    return $(tag)
-      .map(function () {
-        const rawLink = $(this).attr(attribute);
-        let isAbsolute = isAbsoluteURL(rawLink);
-        let link = rawLink;
+export const getLinks = ($, pageUrl) => tagToSourceAttributeMapping.flatMap((item) => {
+  const { tag, attribute } = item;
+  return $(tag)
+    .map(function () {
+      const rawLink = $(this).attr(attribute);
+      const result = {
+        tag,
+        rawLink,
+        link: rawLink,
+        isAbsolute: null,
+        formattedLink: null,
+        isEmpty: true,
+      };
 
-        if (isAbsolute) {
-          const url = new URL(rawLink);
-          if (isSameDomainURLs(pageUrl, url)) {
-            isAbsolute = false;
-            link = url.pathname;
-          }
+      if (!rawLink) {
+        return result;
+      }
+
+      let isAbsolute = isAbsoluteURL(rawLink);
+      let { link } = result;
+
+      if (isAbsolute) {
+        const url = new URL(rawLink);
+        if (isSameDomainURLs(pageUrl, url)) {
+          isAbsolute = false;
+          link = url.pathname;
         }
+      } else {
+        const { root } = path.parse(link);
+        link = root ? link : `/${link}`;
+      }
+      const formattedLink = isAbsolute ? link : formatLink(link, pageUrl);
 
-        const formattedLink = isAbsolute ? link : formatLink(link, pageUrl);
-
-        return {
-          tag, link, isAbsolute, formattedLink, rawLink,
-        };
-      })
-      .toArray();
-  });
-  return result;
-};
+      return {
+        ...result,
+        isEmpty: false,
+        link,
+        isAbsolute,
+        formattedLink,
+      };
+    })
+    .toArray();
+});
 
 export const replaceLinks = ($, dirname, links) => {
   tagToSourceAttributeMapping.forEach(({ tag, attribute }) => {
     const filteredLinks = links.filter((link) => link.tag === tag);
     $(tag).each(function (i) {
-      const { formattedLink, isAbsolute } = filteredLinks[i];
+      const { formattedLink, isAbsolute, isEmpty } = filteredLinks[i];
+      if (isEmpty) {
+        return;
+      }
       if (!isAbsolute) {
         const newAttr = `${dirname}/${formattedLink}`;
         $(this).attr(attribute, newAttr);
@@ -87,8 +106,10 @@ const downloadAsset = (url) => axios({
 });
 
 export const processAssets = (url, directory, links) => {
-  const promises = links.reduce((acc, { link, isAbsolute, formattedLink }) => {
-    if (isAbsolute) {
+  const promises = links.reduce((acc, {
+    isEmpty, link, isAbsolute, formattedLink,
+  }) => {
+    if (isAbsolute || isEmpty) {
       return acc;
     }
     const address = `${url.protocol}//${url.hostname}${link}`;
