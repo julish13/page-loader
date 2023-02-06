@@ -18,8 +18,7 @@ const resourcesData = [
   { name: 'ru-hexlet-io-assets-professions-nodejs2.png', link: '/assets/professions/nodejs2.png' },
   { name: 'ru-hexlet-io-assets-application.css', link: '/assets/application.css' },
   { name: 'ru-hexlet-io-courses.html', link: '/courses' },
-  { name: 'ru-hexlet-io-assets-application.css', link: '/assets/application.css' },
-  { name: 'ru-hexlet-io-courses.html', link: '/packs/js/runtime.js' },
+  { name: 'ru-hexlet-io-packs-js-runtime.js', link: '/packs/js/runtime.js' },
 ];
 let tempDir;
 let resources = [];
@@ -28,7 +27,10 @@ beforeEach(async () => {
   tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
   resources = await Promise.all(
     resourcesData.map(async ({ name, link }) => {
-      const content = await fsp.readFile(getFixturePath(name), null);
+      const content = await fsp.readFile(
+        getFixturePath(path.join(assetsDirectoryName, name)),
+        null,
+      );
       nock('https://ru.hexlet.io').get(link).reply(200, content);
       return { name, content };
     }),
