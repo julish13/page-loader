@@ -4,7 +4,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import nock from 'nock';
 import pageLoader from '../src/index';
-import { NETWORK_ERROR_MESSAGES } from '../src/const';
+import { NETWORK_ERROR_MESSAGES, FILESYSTEM_ERROR_MESSAGES } from '../src/const';
 import { response, expected } from '../__fixtures__/html';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -74,7 +74,7 @@ describe('general flow', () => {
   });
 });
 
-describe('throwing exceptions', () => {
+describe('network errors', () => {
   afterEach(() => nock.cleanAll());
   test.each(Object.entries(NETWORK_ERROR_MESSAGES))(
     'response with status code %p throws the %p exception for the main page loading',
@@ -111,5 +111,42 @@ describe('throwing exceptions', () => {
     await expect(async () => {
       await pageLoader(url, tempDir);
     }).rejects.toThrow();
+  });
+});
+
+describe('file system errors', () => {
+  afterEach(() => nock.cleanAll());
+  beforeAll(async () => {
+    resources = await Promise.all(
+      resourcesData.map(async ({ name, link }) => {
+        const content = await fsp.readFile(
+          getFixturePath(path.join(assetsDirectoryName, name)),
+          null,
+        );
+        nock('https://ru.hexlet.io').persist().get(link).reply(200, content);
+        return { name, content };
+      }),
+    );
+    nock('https://ru.hexlet.io').persist().get('/courses').reply(200, response);
+  });
+
+  test("the directory doesn't exist", async () => {
+    const nonExistentDirectory = '/non-existent-dir';
+    const message = FILESYSTEM_ERROR_MESSAGES.ENOENT({ directory: nonExistentDirectory });
+    try {
+      await pageLoader(url, nonExistentDirectory);
+    } catch (error) {
+      expect(error.message).toMatch(message);
+    }
+  });
+
+  test('access to the directory is denied', async () => {
+    const message = FILESYSTEM_ERROR_MESSAGES.EACCES({ directory: tempDir });
+    await fsp.chmod(tempDir, 0o400);
+    try {
+      await pageLoader(url, tempDir);
+    } catch (error) {
+      expect(error.message).toMatch(message);
+    }
   });
 });

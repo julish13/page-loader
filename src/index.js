@@ -10,6 +10,7 @@ import {
   replaceLinks,
   processAssets,
   axiosErrorHandler,
+  fileSystemErrorHandler,
 } from './utils.js';
 
 const require = createRequire(import.meta.url);
@@ -37,9 +38,12 @@ const pageLoader = (address, directory = currentDir) => {
   log(`downloading the page ${address}`);
   return Promise.all([
     axios.get(address),
-    fsp.mkdir(assetsDirPath).then(() => {
-      log(`directory for the page assets has been created at the ${assetsDirPath}`);
-    }),
+    fsp
+      .mkdir(assetsDirPath)
+      .then(() => {
+        log(`directory for the page assets has been created at the ${assetsDirPath}`);
+      })
+      .catch((error) => fileSystemErrorHandler(error, { directory })),
   ])
     .then(([response]) => {
       log(`the page ${address} has been downladed`);
@@ -51,14 +55,16 @@ const pageLoader = (address, directory = currentDir) => {
       const promises = processAssets(url, assetsDirPath, links);
       log(`saving the page ${address}`);
       return Promise.all([
-        fsp.writeFile(pagePath, newHtml).then(() => {
-          log(`the page ${address} has been saved as a ${pagePath}`);
-        }),
+        fsp
+          .writeFile(pagePath, newHtml)
+          .then(() => {
+            log(`the page ${address} has been saved as a ${pagePath}`);
+          })
+          .catch((error) => fileSystemErrorHandler(error, { directory })),
         ...promises,
       ]);
     })
     .then(() => pagePath);
-  // .catch(console.log);
 };
 
 export default pageLoader;

@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 import * as fsp from 'node:fs/promises';
 import path from 'path';
 import debug from 'debug';
-import { NETWORK_ERROR_MESSAGES } from './const';
+import { NETWORK_ERROR_MESSAGES, FILESYSTEM_ERROR_MESSAGES } from './const';
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');
@@ -30,9 +30,14 @@ const replaceSymbolsWithDash = (string) => {
   return string.replace(regex, '-');
 };
 
+export const fileSystemErrorHandler = (error, data) => {
+  const { code } = error;
+  throw new Error(FILESYSTEM_ERROR_MESSAGES[code](data) || error.message);
+};
+
 export const axiosErrorHandler = (error) => {
-  const { status: statusCode } = error.response;
-  throw new Error(NETWORK_ERROR_MESSAGES[statusCode] || error.message);
+  const { status } = error.response;
+  throw new Error(NETWORK_ERROR_MESSAGES[status] || error.message);
 };
 
 export const getAssetsNames = (url) => {
@@ -131,9 +136,10 @@ export const processAssets = (url, directory, links) => {
       log(`the asset ${link} has been downloaded`);
       log(`saving the asset ${link}`);
       const filepath = path.join(directory, formattedLink);
-      return saveAsset(filepath, res.data).then(() => log(`the asset ${link} has been saved as a ${filepath}`));
+      return saveAsset(filepath, res.data)
+        .then(() => log(`the asset ${link} has been saved as a ${filepath}`))
+        .catch((error) => fileSystemErrorHandler(error, { directory }));
     });
-    // .catch(console.log);
     return [...acc, promise];
   }, []);
   return promises;
