@@ -7,10 +7,23 @@ import debug from 'debug';
 import {
   getAssetsNames, getLinks, replaceLinks, processAssets,
 } from './utils.js';
+import { NETWORK_ERROR_MESSAGES } from './const';
+
+const axiosErrorHandler = (error) => {
+  const { status: statusCode } = error.response;
+  throw new Error(NETWORK_ERROR_MESSAGES[statusCode] || error.message);
+};
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');
 const axios = require('axios');
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    axiosErrorHandler(error);
+  },
+);
 
 const log = debug('page-loader');
 const currentDir = process.cwd();

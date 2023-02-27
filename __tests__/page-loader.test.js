@@ -4,6 +4,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import nock from 'nock';
 import pageLoader from '../src/index';
+import { NETWORK_ERROR_MESSAGES } from '../src/const';
 import { response, expected } from '../__fixtures__/html';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,41 +26,90 @@ let resources = [];
 
 beforeEach(async () => {
   tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
-  resources = await Promise.all(
-    resourcesData.map(async ({ name, link }) => {
-      const content = await fsp.readFile(
-        getFixturePath(path.join(assetsDirectoryName, name)),
-        null,
-      );
-      nock('https://ru.hexlet.io').get(link).reply(200, content);
-      return { name, content };
-    }),
+});
+
+describe('general flow', () => {
+  beforeAll(async () => {
+    resources = await Promise.all(
+      resourcesData.map(async ({ name, link }) => {
+        const content = await fsp.readFile(
+          getFixturePath(path.join(assetsDirectoryName, name)),
+          null,
+        );
+        nock('https://ru.hexlet.io').persist().get(link).reply(200, content);
+        return { name, content };
+      }),
+    );
+    nock('https://ru.hexlet.io').persist().get('/courses').reply(200, response);
+  });
+
+  afterAll(() => {
+    nock.cleanAll();
+  });
+
+  test('page download', async () => {
+    const result = await pageLoader(url, tempDir);
+    const files = await fsp.readdir(tempDir);
+
+    expect(result).toBe(path.join(tempDir, filename));
+    expect(files).toContain(filename);
+  });
+
+  test('html is correct', async () => {
+    await pageLoader(url, tempDir);
+    const fileData = await fsp.readFile(path.join(tempDir, filename), { encoding: 'utf8' });
+    expect(fileData).toEqual(expected);
+  });
+
+  test('resources downloaded', async () => {
+    await pageLoader(url, tempDir);
+    const directory = path.join(tempDir, assetsDirectoryName);
+    const files = await fsp.readdir(directory);
+
+    resources.forEach(async ({ name, content }) => {
+      expect(files).toContain(name);
+      const tempFile = await fsp.readFile(path.join(directory, name), null);
+      expect(tempFile).toEqual(content);
+    });
+  });
+});
+
+describe('throwing exceptions', () => {
+  afterEach(() => nock.cleanAll());
+  test.each(Object.entries(NETWORK_ERROR_MESSAGES))(
+    'response with status code %p throws the %p exception for the main page loading',
+    async (code, message) => {
+      nock('https://ru.hexlet.io').persist().get('/courses').reply(Number(code), null);
+
+      try {
+        await pageLoader(url, tempDir);
+      } catch (error) {
+        expect(error.message).toMatch(message);
+      }
+    },
   );
-  nock('https://ru.hexlet.io').get('/courses').reply(200, response);
-});
 
-test('page download', async () => {
-  const result = await pageLoader(url, tempDir);
-  const files = await fsp.readdir(tempDir);
+  test.each(Object.entries(NETWORK_ERROR_MESSAGES))(
+    'response with status code %p throws the %p exception for resources loading',
+    async (code, message) => {
+      nock('https://ru.hexlet.io').persist().get('/courses').reply(200, response);
+      resourcesData.forEach(({ link }) => {
+        nock('https://ru.hexlet.io').persist().get(link).reply(Number(code), null);
+      });
 
-  expect(result).toBe(path.join(tempDir, filename));
-  expect(files).toContain(filename);
-});
+      try {
+        await pageLoader(url, tempDir);
+      } catch (error) {
+        expect(error.message).toMatch(message);
+      }
+    },
+  );
 
-test('html is correct', async () => {
-  await pageLoader(url, tempDir);
-  const fileData = await fsp.readFile(path.join(tempDir, filename), { encoding: 'utf8' });
-  expect(fileData).toEqual(expected);
-});
+  test('uncustomized error message', async () => {
+    nock('https://ru.hexlet.io').get('/courses').reply(403, null);
 
-test('resources downloaded', async () => {
-  await pageLoader(url, tempDir);
-  const directory = path.join(tempDir, assetsDirectoryName);
-  const files = await fsp.readdir(directory);
-
-  resources.forEach(async ({ name, content }) => {
-    expect(files).toContain(name);
-    const tempFile = await fsp.readFile(path.join(directory, name), null);
-    expect(tempFile).toEqual(content);
+    await expect(async () => {
+      await pageLoader(url, tempDir);
+    }).rejects.toThrow();
   });
 });
