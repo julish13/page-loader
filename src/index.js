@@ -5,14 +5,12 @@ import path from 'path';
 import process from 'process';
 import debug from 'debug';
 import {
-  getAssetsNames, getLinks, replaceLinks, processAssets,
+  getAssetsNames,
+  getLinks,
+  replaceLinks,
+  processAssets,
+  axiosErrorHandler,
 } from './utils.js';
-import { NETWORK_ERROR_MESSAGES } from './const';
-
-const axiosErrorHandler = (error) => {
-  const { status: statusCode } = error.response;
-  throw new Error(NETWORK_ERROR_MESSAGES[statusCode] || error.message);
-};
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');

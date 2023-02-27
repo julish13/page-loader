@@ -2,6 +2,7 @@ import { createRequire } from 'module';
 import * as fsp from 'node:fs/promises';
 import path from 'path';
 import debug from 'debug';
+import { NETWORK_ERROR_MESSAGES } from './const';
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');
@@ -27,6 +28,11 @@ const isSameDomainURLs = (url1, url2) => url1.hostname === url2.hostname;
 const replaceSymbolsWithDash = (string) => {
   const regex = /[^A-Z0-9]+/gi;
   return string.replace(regex, '-');
+};
+
+export const axiosErrorHandler = (error) => {
+  const { status: statusCode } = error.response;
+  throw new Error(NETWORK_ERROR_MESSAGES[statusCode] || error.message);
 };
 
 export const getAssetsNames = (url) => {
