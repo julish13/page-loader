@@ -32,6 +32,7 @@ const replaceSymbolsWithDash = (string) => {
 
 export const fileSystemErrorHandler = (error, data) => {
   const { code } = error;
+  log(`File System Error! ${error.message}`);
   throw new Error(FILESYSTEM_ERROR_MESSAGES[code](data) || error.message);
 };
 
