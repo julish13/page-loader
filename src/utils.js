@@ -2,7 +2,7 @@ import { createRequire } from 'module';
 import * as fsp from 'node:fs/promises';
 import path from 'path';
 import debug from 'debug';
-import { NETWORK_ERROR_MESSAGES, FILESYSTEM_ERROR_MESSAGES } from './const';
+import { NETWORK_ERROR_MESSAGES, FILESYSTEM_ERROR_MESSAGES } from './const.js';
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');
