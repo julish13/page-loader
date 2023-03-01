@@ -1,14 +1,11 @@
 import { createRequire } from 'module';
 import * as fsp from 'node:fs/promises';
 import path from 'path';
-import debug from 'debug';
-import { errorHandler as fileSystemErrorHandler } from './errors/index.js';
+import { errorHandler } from './errors/index.js';
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');
 const axios = require('axios');
-
-const log = debug('page-loader');
 
 const tagToSourceAttributeMapping = [
   { tag: 'img', attribute: 'src' },
@@ -121,16 +118,13 @@ export const processAssets = (url, directory, links) => {
       return acc;
     }
     const address = `${url.protocol}//${url.hostname}${link}`;
-    log(`downloading the page asset ${link}`);
-    const promise = downloadAsset(address).then((res) => {
-      log(`the asset ${link} has been downloaded`);
-      log(`saving the asset ${link}`);
-      const filepath = path.join(directory, formattedLink);
-      return saveAsset(filepath, res.data)
-        .then(() => log(`the asset ${link} has been saved as a ${filepath}`))
-        .catch((error) => fileSystemErrorHandler(error, { directory }));
-    });
-    return [...acc, promise];
+    const filepath = path.join(directory, formattedLink);
+    const promise = downloadAsset(address)
+      .then((res) => saveAsset(filepath, res.data))
+      .catch((error) => {
+        errorHandler(error, { directory });
+      });
+    return [...acc, { promise, link }];
   }, []);
   return promises;
 };

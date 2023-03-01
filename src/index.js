@@ -4,6 +4,8 @@ import * as fsp from 'node:fs/promises';
 import path from 'path';
 import process from 'process';
 import debug from 'debug';
+import Listr from 'listr';
+
 import {
   getAssetsNames, getLinks, replaceLinks, processAssets,
 } from './utils.js';
@@ -25,13 +27,11 @@ const currentDir = process.cwd();
 
 const pageLoader = (address, directory = currentDir) => {
   const url = new URL(address);
-  log(`preparing paths in ${directory} for the page ${address} and its assets`);
   const { filename, dirname } = getAssetsNames(url);
   const assetsDirPath = path.join(directory, dirname);
   const pagePath = path.join(directory, filename);
 
   log('creating directory for the page assets');
-  log(`downloading the page ${address}`);
   return Promise.all([
     axios.get(address),
     fsp
@@ -42,13 +42,15 @@ const pageLoader = (address, directory = currentDir) => {
       .catch((error) => errorHandler(error, { directory })),
   ])
     .then(([response]) => {
-      log(`the page ${address} has been downladed`);
       log('processing the downloaded page');
       const html = response.data;
       const $ = load(html);
       const links = getLinks($, url);
       const newHtml = replaceLinks($, dirname, links);
-      const promises = processAssets(url, assetsDirPath, links);
+      const tasks = processAssets(url, assetsDirPath, links).map(({ promise, link }) => ({
+        title: `downloading the asset ${link} and saving in the ${assetsDirPath}`,
+        task: () => promise,
+      }));
       log(`saving the page ${address}`);
       return Promise.all([
         fsp
@@ -57,7 +59,7 @@ const pageLoader = (address, directory = currentDir) => {
             log(`the page ${address} has been saved as a ${pagePath}`);
           })
           .catch((error) => errorHandler(error, { directory })),
-        ...promises,
+        new Listr(tasks, { concurrent: true, exitOnError: false }).run().catch(() => {}),
       ]);
     })
     .then(() => pagePath);
