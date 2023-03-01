@@ -4,7 +4,7 @@ import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import nock from 'nock';
 import pageLoader from '../src/index';
-import { NETWORK_ERROR_MESSAGES, FILESYSTEM_ERROR_MESSAGES } from '../src/const';
+import { NETWORK_ERROR_MESSAGES, FILESYSTEM_ERROR_MESSAGES } from '../src/errors';
 import { response, expected } from '../__fixtures__/html';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -132,7 +132,7 @@ describe('file system errors', () => {
 
   test("the directory doesn't exist", async () => {
     const nonExistentDirectory = '/non-existent-dir';
-    const message = FILESYSTEM_ERROR_MESSAGES.ENOENT({ directory: nonExistentDirectory });
+    const message = FILESYSTEM_ERROR_MESSAGES.ENOENT(nonExistentDirectory);
     try {
       await pageLoader(url, nonExistentDirectory);
     } catch (error) {
@@ -141,7 +141,7 @@ describe('file system errors', () => {
   });
 
   test('access to the directory is denied', async () => {
-    const message = FILESYSTEM_ERROR_MESSAGES.EACCES({ directory: tempDir });
+    const message = FILESYSTEM_ERROR_MESSAGES.EACCES(tempDir);
     await fsp.chmod(tempDir, 0o400);
     try {
       await pageLoader(url, tempDir);

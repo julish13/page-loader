@@ -5,13 +5,9 @@ import path from 'path';
 import process from 'process';
 import debug from 'debug';
 import {
-  getAssetsNames,
-  getLinks,
-  replaceLinks,
-  processAssets,
-  axiosErrorHandler,
-  fileSystemErrorHandler,
+  getAssetsNames, getLinks, replaceLinks, processAssets,
 } from './utils.js';
+import { errorHandler } from './errors/index.js';
 
 const require = createRequire(import.meta.url);
 require('axios-debug-log');
@@ -20,7 +16,7 @@ const axios = require('axios');
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    axiosErrorHandler(error);
+    errorHandler(error);
   },
 );
 
@@ -43,7 +39,7 @@ const pageLoader = (address, directory = currentDir) => {
       .then(() => {
         log(`directory for the page assets has been created at the ${assetsDirPath}`);
       })
-      .catch((error) => fileSystemErrorHandler(error, { directory })),
+      .catch((error) => errorHandler(error, { directory })),
   ])
     .then(([response]) => {
       log(`the page ${address} has been downladed`);
@@ -60,7 +56,7 @@ const pageLoader = (address, directory = currentDir) => {
           .then(() => {
             log(`the page ${address} has been saved as a ${pagePath}`);
           })
-          .catch((error) => fileSystemErrorHandler(error, { directory })),
+          .catch((error) => errorHandler(error, { directory })),
         ...promises,
       ]);
     })
