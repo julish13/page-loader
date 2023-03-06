@@ -25,9 +25,7 @@ axios.interceptors.response.use(
 const log = debug('page-loader');
 
 const pageLoader = (address, directory = process.cwd()) => {
-  log(
-    `program starts with the following parameters: address = ${address}, directory=${directory}; currentDir=${process.cwd()}`,
-  );
+  log(`program starts with the following parameters: address = ${address}, directory=${directory}`);
   const url = new URL(address);
   const { filename, dirname } = getAssetsNames(url);
   const assetsDirPath = path.join(directory, dirname);
