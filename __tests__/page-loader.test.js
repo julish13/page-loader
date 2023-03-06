@@ -23,6 +23,7 @@ const resourcesData = [
 ];
 let tempDir;
 let resources = [];
+const nonExistentDirectory = '/non-existent-dir';
 
 beforeEach(async () => {
   tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'page-loader-'));
@@ -81,27 +82,18 @@ describe('network errors', () => {
     async (code, message) => {
       nock('https://ru.hexlet.io').persist().get('/courses').reply(Number(code), null);
 
-      try {
-        await pageLoader(url, tempDir);
-      } catch (error) {
-        expect(error.message).toMatch(message);
-      }
+      await expect(pageLoader(url, tempDir)).rejects.toThrow(message);
     },
   );
 
   test.each(Object.entries(NETWORK_ERROR_MESSAGES))(
-    'response with status code %p throws the %p exception for resources loading',
-    async (code, message) => {
+    'failed resources loading resolves',
+    async (code) => {
       nock('https://ru.hexlet.io').persist().get('/courses').reply(200, response);
       resourcesData.forEach(({ link }) => {
         nock('https://ru.hexlet.io').persist().get(link).reply(Number(code), null);
       });
-
-      try {
-        await pageLoader(url, tempDir);
-      } catch (error) {
-        expect(error.message).toMatch(message);
-      }
+      await expect(pageLoader(url, tempDir)).resolves.toBe(path.join(tempDir, filename));
     },
   );
 
@@ -131,22 +123,17 @@ describe('file system errors', () => {
   });
 
   test("the directory doesn't exist", async () => {
-    const nonExistentDirectory = '/non-existent-dir';
     const message = FILESYSTEM_ERROR_MESSAGES.ENOENT(nonExistentDirectory);
-    try {
+    await expect(async () => {
       await pageLoader(url, nonExistentDirectory);
-    } catch (error) {
-      expect(error.message).toMatch(message);
-    }
+    }).rejects.toThrow(message);
   });
 
   test('access to the directory is denied', async () => {
     const message = FILESYSTEM_ERROR_MESSAGES.EACCES(tempDir);
     await fsp.chmod(tempDir, 0o400);
-    try {
+    await expect(async () => {
       await pageLoader(url, tempDir);
-    } catch (error) {
-      expect(error.message).toMatch(message);
-    }
+    }).rejects.toThrow(message);
   });
 });
