@@ -23,9 +23,8 @@ axios.interceptors.response.use(
 );
 
 const log = debug('page-loader');
-const currentDir = process.cwd();
 
-const pageLoader = (address, directory = currentDir) => {
+const pageLoader = (address, directory = process.cwd()) => {
   log(
     `program starts with the following parameters: address = ${address}, directory=${directory}; currentDir=${process.cwd()}`,
   );

@@ -4,12 +4,10 @@ import debug from 'debug';
 import { program } from 'commander';
 import pageLoader from '../src/index.js';
 
-const currentDir = process.cwd();
-
 program
   .version('1.0.0')
   .description('Page loader utility')
-  .option('-o --output [dir]', `output dir (default: ${currentDir})`, currentDir)
+  .option('-o --output [dir]', `output dir (default: ${process.cwd()})`, process.cwd())
   .option('-d --debug', 'enables debug logger')
   .arguments('<url>')
 
