@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "test": "NODE_OPTIONS=--experimental-vm-modules DEBUG=page-loader*,axios,nock.common* npx jest --colors",
+    "test": "NODE_OPTIONS=--experimental-vm-modules DEBUG=page-loader*,axios,nock.common* npx jest --colors --detectOpenHandles",
     "prepare": "husky install"
   },
   "bin": {
