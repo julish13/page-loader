@@ -26,7 +26,9 @@ const log = debug('page-loader');
 const currentDir = process.cwd();
 
 const pageLoader = (address, directory = currentDir) => {
-  log(`program starts with the following parameters: address = ${address}, directory=${directory}`);
+  log(
+    `program starts with the following parameters: address = ${address}, directory=${directory}; currentDir=${process.cwd()}`,
+  );
   const url = new URL(address);
   const { filename, dirname } = getAssetsNames(url);
   const assetsDirPath = path.join(directory, dirname);
