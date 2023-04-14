@@ -1,7 +1,6 @@
 {
   "name": "@hexlet/code",
   "version": "1.0.0",
-  "description": "[![Actions Status](https://github.com/julish13/backend-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/julish13/backend-project-lvl3/actions)",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -13,14 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/julish13/backend-project-lvl3.git"
+    "url": "git+https://github.com/julish13/page-loader.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/julish13/backend-project-lvl3/issues"
+    "url": "https://github.com/julish13/page-loader/issues"
   },
-  "homepage": "https://github.com/julish13/backend-project-lvl3#readme",
+  "homepage": "https://github.com/julish13/page-loader#readme",
   "devDependencies": {
     "eslint": "^8.24.0",
     "eslint-config-airbnb-base": "^15.0.0",
